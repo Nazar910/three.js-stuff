@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8>
+    <title>Lab 1</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
+</head>
+
+<body>
+    <script src="./dat.gui.min.js"></script>
+    <script src="./three.js"></script>
+    <script>
+        // global variables
+        let renderer;
+        let scene;
+        let camera;
+        let camControls;
+        let API = {
+            p: 3,
+            b: 0.5,
+            a: 1,
+            R: 5,
+            vTo: 7,
+            uTo: 2 * Math.PI
+        };
+        function helikoideWaveAndStraight(u, v, target) {
+            const { p, b, a, R, vTo, uTo } = this;
+            u = u * uTo;
+            v = v * (vTo - R) + R;
+            const x = v * Math.cos(u);
+            const y = v * Math.sin(u);
+            const z = b * u + a * Math.sin(p * u);
+            target.set(x, y, z);
+        }
+        function init() {
+            // create a scene, that will hold all our elements such as objects, cameras and lights.
+            scene = new THREE.Scene();
+            // create a camera, which defines where we're looking at.
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+            // create a render, sets the background color and the size
+            renderer = new THREE.WebGLRenderer();
+            renderer.setClearColor(0x000000, 1.0);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.position.x = 0;
+            camera.position.y = 50;
+            camera.position.z = 150;
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
+            camera.updateProjectionMatrix();
+            document.body.appendChild(renderer.domElement);
+            initGui();
+        }
+        function display() {
+            while (scene.children.length > 0) {
+                scene.remove(scene.children[0]);
+            }
+            const directionalLight = new THREE.DirectionalLight();
+            directionalLight.position.set(-30, 50, 50);
+            scene.add(directionalLight);
+            const geom = new THREE.ParametricGeometry(helikoideWaveAndStraight.bind(API), 100, 100);
+            const texture = new THREE.TextureLoader().load('batman.png');
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            texture.repeat.set(4, 1);
+            const mat = new THREE.MeshPhongMaterial({
+                side: THREE.DoubleSide,
+                shading: THREE.FlatShading,
+                map: texture
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.name = 'param';
+            mesh.scale.set(4, 4, 4);
+            scene.add(mesh);
+        }
+        function render() {
+            renderer.render(scene, camera);
+            scene.getObjectByName('param').rotation.x += 0.01;
+            scene.getObjectByName('param').rotation.y += 0.01;
+            requestAnimationFrame(render);
+        }
+        function initGui() {
+            gui = new dat.GUI();
+            gui.add(API, 'p', 0.0, 10.0).name('p').onChange(display);
+            gui.add(API, 'b', 0.0, 10.0).name('b').onChange(display);
+            gui.add(API, 'a', 0.0, 10.0).name('a').onChange(display);
+            gui.add(API, 'R', 0.0, 20.0).name('R').onChange(display);
+            gui.add(API, 'vTo', API.R, 20.0).name('vTo').onChange(display);
+            gui.add(API, 'uTo', 0.1, 4 * Math.PI).name('uTo').onChange(display);
+        }
+        window.onload = () => {
+            init();
+            display();
+            render();
+        };
+    </script>
+</body>
+
+</html>
