@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+  nginx-3js:
+    container_name: nginx-3js
+    image: nginx-3js
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    ports:
+      - 5050:80
+    volumes:
+      - "./labs:/usr/app/labs"
