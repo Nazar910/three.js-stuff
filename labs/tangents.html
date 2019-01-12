@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8>
+    <title>Tangents</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
+</head>
+
+<body>
+    <script src="./dat.gui.min.js"></script>
+    <script src="./three.js"></script>
+    <script>
+        // global variables
+        let renderer;
+        let scene;
+        let camera;
+        let camControls;
+        let API = {
+            p: 3,
+            b: 0.5,
+            a: 1,
+            R: 5,
+            vTo: 7,
+            uTo: 2 * Math.PI,
+            uTangent: 0.5,
+            vTangent: 0.5
+        };
+        function helikoideWaveAndStraight(u, v, target, printUV) {
+            const { p, b, a, R, vTo, uTo } = this;
+            u = u * uTo;
+            v = v * (vTo - R) + R;
+            if (printUV) console.log('U =', u, 'V =', v);
+            const x = v * Math.cos(u);
+            const y = v * Math.sin(u);
+            const z = b * u + a * Math.sin(p * u);
+            target.set(x, y, z);
+        }
+        function tangents(u, v) {
+            const delta = 0.01;
+            const f = new THREE.Vector3();
+            helikoideWaveAndStraight.call(API, u, v, f, true);
+            console.log('F =', f);
+            const f_u_delta = new THREE.Vector3();
+            helikoideWaveAndStraight.call(API, u + delta, v, f_u_delta, true);
+            console.log('F_u_delta', f_u_delta);
+            const xU = (f_u_delta.x - f.x) / delta;
+            const yU = (f_u_delta.y - f.y) / delta;
+            const zU = (f_u_delta.z - f.z) / delta;
+            const f_v_delta = new THREE.Vector3();
+            helikoideWaveAndStraight.call(API, u, v + delta, f_v_delta, true);
+            console.log('F_v_delta', f_v_delta);
+            const xV = (f_v_delta.x - f.x) / delta;
+            const yV = (f_v_delta.y - f.y) / delta;
+            const zV = (f_v_delta.z - f.z) / delta;
+            return {
+                dirU: new THREE.Vector3(xU, yU, zU),
+                dirV: new THREE.Vector3(xV, yV, zV),
+                origin: new THREE.Vector3(f.x, f.y, f.z)
+            };
+        }
+        function init() {
+            // create a scene, that will hold all our elements such as objects, cameras and lights.
+            scene = new THREE.Scene();
+            // create a camera, which defines where we're looking at.
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+            // create a render, sets the background color and the size
+            renderer = new THREE.WebGLRenderer();
+            renderer.setClearColor(0x000000, 1.0);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.position.x = 0;
+            camera.position.y = 50;
+            camera.position.z = 150;
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
+            camera.updateProjectionMatrix();
+            document.body.appendChild(renderer.domElement);
+            initGui();
+        }
+        function display() {
+            while (scene.children.length > 0) {
+                scene.remove(scene.children[0]);
+            }
+            const directionalLight = new THREE.DirectionalLight();
+            directionalLight.position.set(-30, 50, 50);
+            scene.add(directionalLight);
+            const geom = new THREE.ParametricGeometry(helikoideWaveAndStraight.bind(API), 100, 100);
+            const mat = new THREE.MeshPhongMaterial({ color: 0xcc3333a, side: THREE.DoubleSide, shading: THREE.FlatShading });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.name = 'hellikoide';
+            mesh.scale.set(4, 4, 4);
+            scene.add(mesh);
+            const { dirU, dirV, origin } = tangents(API.uTangent, API.vTangent);
+            dirU.normalize();
+            dirV.normalize();
+            origin.multiplyScalar(4);
+            const length = 30;
+            const hex = 0xffff00;;
+            const arrow_rU = new THREE.ArrowHelper(dirU, origin, length, hex);
+            arrow_rU.name = 'ru';
+            scene.add(arrow_rU);
+            const arrow_rV = new THREE.ArrowHelper(dirV, origin, length, hex);
+            arrow_rV.name = 'rv';
+            scene.add(arrow_rV);
+            // const step = 200;
+            // scene.getObjectByName('hellikoide').rotation.x += step;
+            // scene.getObjectByName('hellikoide').rotation.y += step;
+            // scene.getObjectByName('ru').rotation.x += step;
+            // scene.getObjectByName('ru').rotation.y += step;
+            // scene.getObjectByName('rv').rotation.x += step;
+            // scene.getObjectByName('rv').rotation.y += step;
+        }
+        function render() {
+            renderer.render(scene, camera);
+            // const step = 0.01;
+            // scene.getObjectByName('hellikoide').rotation.x += step;
+            // scene.getObjectByName('hellikoide').rotation.y += step;
+            // scene.getObjectByName('ru').rotation.x += step;
+            // scene.getObjectByName('ru').rotation.y += step;
+            // scene.getObjectByName('rv').rotation.x += step;
+            // scene.getObjectByName('rv').rotation.y += step;
+            requestAnimationFrame(render);
+        }
+        function initGui() {
+            gui = new dat.GUI();
+            gui.add(API, 'p', 0.0, 10.0).name('p').onChange(display);
+            gui.add(API, 'b', 0.0, 10.0).name('b').onChange(display);
+            gui.add(API, 'a', 0.0, 10.0).name('a').onChange(display);
+            gui.add(API, 'R', 0.0, 20.0).name('R').onChange(display);
+            gui.add(API, 'vTo', API.R, 20.0).name('vTo').onChange(display);
+            gui.add(API, 'uTo', 0.1, 4 * Math.PI).name('uTo').onChange(display);
+            gui.add(API, 'uTangent', 0, 1).name('uTangent').onChange(display);
+            gui.add(API, 'vTangent', 0, 1).name('vTangent').onChange(display);
+        }
+        window.onload = () => {
+            init();
+            display();
+            render();
+        };
+    </script>
+</body>
+
+</html>
