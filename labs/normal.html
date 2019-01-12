@@ -97,6 +97,9 @@
             const { dirU, dirV, origin } = tangents(API.uTangent, API.vTangent);
             dirU.normalize();
             dirV.normalize();
+            const normal = new THREE.Vector3();
+            normal.multiplyVectors(dirU, dirV);
+            console.log('Normal', normal);
             origin.multiplyScalar(4);
             const length = 30;
             const hex = 0xffff00;;
@@ -106,6 +109,8 @@
             const arrow_rV = new THREE.ArrowHelper(dirV, origin, length, hex);
             arrow_rV.name = 'rv';
             scene.add(arrow_rV);
+            const arrow_normal = new THREE.ArrowHelper(normal, origin, length, hex);
+            scene.add(arrow_normal);
         }
         function render() {
             renderer.render(scene, camera);
