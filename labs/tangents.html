@@ -39,7 +39,6 @@
             const { p, b, a, R, vTo, uTo } = this;
             u = u * uTo;
             v = v * (vTo - R) + R;
-            if (printUV) console.log('U =', u, 'V =', v);
             const x = v * Math.cos(u);
             const y = v * Math.sin(u);
             const z = b * u + a * Math.sin(p * u);
@@ -49,16 +48,13 @@
             const delta = 0.01;
             const f = new THREE.Vector3();
             helikoideWaveAndStraight.call(API, u, v, f, true);
-            console.log('F =', f);
             const f_u_delta = new THREE.Vector3();
             helikoideWaveAndStraight.call(API, u + delta, v, f_u_delta, true);
-            console.log('F_u_delta', f_u_delta);
             const xU = (f_u_delta.x - f.x) / delta;
             const yU = (f_u_delta.y - f.y) / delta;
             const zU = (f_u_delta.z - f.z) / delta;
             const f_v_delta = new THREE.Vector3();
             helikoideWaveAndStraight.call(API, u, v + delta, f_v_delta, true);
-            console.log('F_v_delta', f_v_delta);
             const xV = (f_v_delta.x - f.x) / delta;
             const yV = (f_v_delta.y - f.y) / delta;
             const zV = (f_v_delta.z - f.z) / delta;
@@ -110,23 +106,9 @@
             const arrow_rV = new THREE.ArrowHelper(dirV, origin, length, hex);
             arrow_rV.name = 'rv';
             scene.add(arrow_rV);
-            // const step = 200;
-            // scene.getObjectByName('hellikoide').rotation.x += step;
-            // scene.getObjectByName('hellikoide').rotation.y += step;
-            // scene.getObjectByName('ru').rotation.x += step;
-            // scene.getObjectByName('ru').rotation.y += step;
-            // scene.getObjectByName('rv').rotation.x += step;
-            // scene.getObjectByName('rv').rotation.y += step;
         }
         function render() {
             renderer.render(scene, camera);
-            // const step = 0.01;
-            // scene.getObjectByName('hellikoide').rotation.x += step;
-            // scene.getObjectByName('hellikoide').rotation.y += step;
-            // scene.getObjectByName('ru').rotation.x += step;
-            // scene.getObjectByName('ru').rotation.y += step;
-            // scene.getObjectByName('rv').rotation.x += step;
-            // scene.getObjectByName('rv').rotation.y += step;
             requestAnimationFrame(render);
         }
         function initGui() {
