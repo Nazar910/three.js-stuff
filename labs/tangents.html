@@ -47,14 +47,14 @@
         function tangents(u, v) {
             const delta = 0.01;
             const f = new THREE.Vector3();
-            helikoideWaveAndStraight.call(API, u, v, f, true);
+            helikoideWaveAndStraight.call(API, u, v, f);
             const f_u_delta = new THREE.Vector3();
-            helikoideWaveAndStraight.call(API, u + delta, v, f_u_delta, true);
+            helikoideWaveAndStraight.call(API, u + delta, v, f_u_delta);
             const xU = (f_u_delta.x - f.x) / delta;
             const yU = (f_u_delta.y - f.y) / delta;
             const zU = (f_u_delta.z - f.z) / delta;
             const f_v_delta = new THREE.Vector3();
-            helikoideWaveAndStraight.call(API, u, v + delta, f_v_delta, true);
+            helikoideWaveAndStraight.call(API, u, v + delta, f_v_delta);
             const xV = (f_v_delta.x - f.x) / delta;
             const yV = (f_v_delta.y - f.y) / delta;
             const zV = (f_v_delta.z - f.z) / delta;
