@@ -24,7 +24,7 @@
         let renderer;
         let scene;
         let camera;
-        let camControls;
+        let directionalLight;
         let API = {
             p: 3,
             b: 0.5,
@@ -34,9 +34,10 @@
             uTo: 2 * Math.PI,
             uTangent: 0.3,
             vTangent: 0.5,
-            rotateLeft: false,
-            rotateRight: false
+            showUV: false
         };
+        let rotationLeft = false;
+        let rotationRight = false;
         function helikoideWaveAndStraight(u, v, target) {
             const { p, b, a, R, vTo, uTo } = this;
             u = u * uTo;
@@ -113,7 +114,6 @@
             } else {
                 console.log('Discr is less than 0');
             }
-
             return {
                 dirU,
                 dirV,
@@ -130,11 +130,14 @@
             renderer = new THREE.WebGLRenderer();
             renderer.setClearColor(0x000000, 1.0);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.position.x = 150;
+            camera.position.x = 0;
             camera.position.y = 50;
             camera.position.z = 150;
             camera.lookAt(new THREE.Vector3(0, 0, 0));
             camera.updateProjectionMatrix();
+            directionalLight = new THREE.DirectionalLight();
+            directionalLight.position.set(-30, 50, 50);
+            directionalLight.name = 'd_light';
             document.body.appendChild(renderer.domElement);
             initGui();
         }
@@ -142,9 +145,6 @@
             while (scene.children.length > 0) {
                 scene.remove(scene.children[0]);
             }
-            const directionalLight = new THREE.DirectionalLight();
-            directionalLight.position.set(-30, 50, 50);
-            directionalLight.name = 'd_light';
             scene.add(directionalLight);
             const geom = new THREE.ParametricGeometry(helikoideWaveAndStraight.bind(API), 100, 100);
             const mat = new THREE.MeshPhongMaterial({
@@ -168,22 +168,58 @@
             scene.add(arrow_rV);
             const arrow_normal = new THREE.ArrowHelper(normal, origin, length, hex);
             scene.add(arrow_normal);
+            //show uv coordinate lines (correspoding to selected point)
+            if (API.showUV) {
+                const uPoints = [];
+                for (let uStep = 0; uStep <= 1; uStep += 0.01) {
+                    const vector = new THREE.Vector3();
+                    helikoideWaveAndStraight.call(API, uStep, API.vTangent, vector);
+                    vector.multiplyScalar(4);
+                    uPoints.push(vector);
+                }
+                const vPoints = [];
+                for (let vStep = 0; vStep < 1; vStep += 0.01) {
+                    const vector = new THREE.Vector3();
+                    helikoideWaveAndStraight.call(API, API.uTangent, vStep, vector);
+                    vector.multiplyScalar(4);
+                    vPoints.push(vector);
+                }
+                const uGeom = new THREE.Geometry();
+                uGeom.vertices.push(...uPoints);
+                const vGeom = new THREE.Geometry();
+                vGeom.vertices.push(...vPoints);
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: hex
+                });
+                const uCurve = new THREE.Line(uGeom, lineMaterial);
+                scene.add(uCurve);
+                const vCurve = new THREE.Line(vGeom, lineMaterial);
+                scene.add(vCurve);
+            }
         }
         const rotSpeed = 0.01;
         function render() {
             renderer.render(scene, camera);
             requestAnimationFrame(render);
-            const { rotateLeft, rotateRight } = API;
-            const { x, z } = camera.position;
-            if (rotateLeft) {
-                camera.position.x = x * Math.cos(rotSpeed) + z * Math.sin(rotSpeed);
-                camera.position.z = z * Math.cos(rotSpeed) - x * Math.sin(rotSpeed);
-            } else if (rotateRight) {
-                camera.position.x = x * Math.cos(rotSpeed) - z * Math.sin(rotSpeed);
-                camera.position.z = z * Math.cos(rotSpeed) + x * Math.sin(rotSpeed);
+            if (rotationLeft || rotationRight) {
+                const { x: xCamera, z: zCamera } = camera.position;
+                const { x: xLight, z: zLight } = directionalLight.position;
+                if (rotationLeft) {
+                    camera.position.x = xCamera * Math.cos(rotSpeed) + zCamera * Math.sin(rotSpeed);
+                    camera.position.z = zCamera * Math.cos(rotSpeed) - xCamera * Math.sin(rotSpeed);
+                    //rotate light
+                    directionalLight.position.x = xLight * Math.cos(rotSpeed) + zLight * Math.sin(rotSpeed);
+                    directionalLight.position.z = zLight * Math.cos(rotSpeed) - xLight * Math.sin(rotSpeed);
+                } else if (rotationRight) {
+                    camera.position.x = xCamera * Math.cos(rotSpeed) - zCamera * Math.sin(rotSpeed);
+                    camera.position.z = zCamera * Math.cos(rotSpeed) + xCamera * Math.sin(rotSpeed);
+                    //rotate light
+                    directionalLight.position.x = xLight * Math.cos(rotSpeed) - zLight * Math.sin(rotSpeed);
+                    directionalLight.position.z = zLight * Math.cos(rotSpeed) + xLight * Math.sin(rotSpeed);
+                }
+                camera.lookAt(scene.position);
+                camera.updateProjectionMatrix();
             }
-            camera.lookAt(scene.position);
-            camera.updateProjectionMatrix();
         }
         function initGui() {
             gui = new dat.GUI();
@@ -195,14 +231,28 @@
             gui.add(API, 'uTo', 0.1, 4 * Math.PI).name('uTo').onChange(display);
             gui.add(API, 'uTangent', 0, 1).name('uTangent').onChange(display);
             gui.add(API, 'vTangent', 0, 1).name('vTangent').onChange(display);
-            gui.add(API, 'rotateLeft').name('rotateLeft').onChange(render);
-            gui.add(API, 'rotateRight').name('rotateRight').onChange(render);
+            gui.add(API, 'showUV').name('showUV').onChange(display);
         }
         window.onload = () => {
             init();
             display();
             render();
         };
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') {
+                rotationRight = false;
+                rotationLeft = true;
+                return;
+            } else if (event.key === 'ArrowRight') {
+                rotationLeft = false;
+                rotationRight = true;
+                return;
+            }
+        });
+        document.addEventListener('keyup', () => {
+            rotationLeft = false;
+            rotationRight = false;
+        });
     </script>
 </body>
 
