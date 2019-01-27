@@ -61,6 +61,10 @@
             const dirU = new THREE.Vector3(xU, yU, zU);
             const dirV = new THREE.Vector3(xV, yV, zV);
             const origin = new THREE.Vector3(f.x, f.y, f.z);
+            dirU.normalize();
+            dirV.normalize();
+            const normal = new THREE.Vector3();
+            normal.multiplyVectors(dirU, dirV);
             const scalarMul = (v1, v2) => (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
             //=================Xi angle=================
             const X_angle = Math.acos(
@@ -70,7 +74,7 @@
             console.log('Xi_angle between u and v coordinate curves');
             console.log('Xi_angle (radians) =', X_angle);
             console.log('Xi_angle (degrees) =', X_angle * 180 / Math.PI);
-            //=================Xi angle=================
+            //==========================================
             const { b, p, a } = API;
             const F = 0;
             const E = v * v + (b + a * p * Math.cos(p * u));
@@ -79,14 +83,26 @@
             const L = (a * p * p * v * Math.sin(p * u)) / A;
             const M = (b + a * p * Math.cos(p * u)) / A;
             const N = 0;
+            const V_normal_ort_u = new THREE.Vector3();
+            V_normal_ort_u.multiplyVectors(dirU, normal);
+            V_normal_ort_u.normalize();
+            const ku = a * p**2 * v * Math.sin(p * u) / (A**3);
+            const K_norm_u = ku * scalarMul(V_normal_ort_u, normal);
+            console.log('K_norm_u =', K_norm_u);
+            const V_normal_ort_v = new THREE.Vector3();
+            V_normal_ort_v.multiplyVectors(dirV, normal);
+            V_normal_ort_v.normalize();
+            const kv = 0;
+            const K_norm_v = kv * scalarMul(V_normal_ort_v, normal);
+            console.log('K_norm_v =', K_norm_v);
             //computing k1 and k2 from square equation
             const a_discr = (F * F - E * G);
             const b_discr = (E * N + G * L - 2 * F * M);
             const c_discr = (M * M - L * N);
             const Discr = b_discr ** 2 - 4 * a_discr * c_discr;
             if (Discr >= 0) {
-                const k1 = (-b_discr - Math.sqrt(Discr)) / 2 * a_discr;
-                const k2 = (-b_discr + Math.sqrt(Discr)) / 2 * a_discr;
+                const k1 = (-b_discr - Math.sqrt(Discr)) / (2 * a_discr);
+                const k2 = (-b_discr + Math.sqrt(Discr)) / (2 * a_discr);
                 const K_povn = k1 * k2;
                 console.log('K_povn =', K_povn);
                 const K_seredn = k1 + k2;
@@ -94,10 +110,12 @@
             } else {
                 console.log('Discr is less than 0');
             }
+
             return {
                 dirU,
                 dirV,
-                origin
+                origin,
+                normal
             };
         }
         function init() {
@@ -109,7 +127,7 @@
             renderer = new THREE.WebGLRenderer();
             renderer.setClearColor(0x000000, 1.0);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.position.x = 100;
+            camera.position.x = 150;
             camera.position.y = 50;
             camera.position.z = 150;
             camera.lookAt(new THREE.Vector3(0, 0, 0));
@@ -134,11 +152,7 @@
             mesh.name = 'hellikoide';
             mesh.scale.set(4, 4, 4);
             scene.add(mesh);
-            const { dirU, dirV, origin } = tangents(API.uTangent, API.vTangent);
-            dirU.normalize();
-            dirV.normalize();
-            const normal = new THREE.Vector3();
-            normal.multiplyVectors(dirU, dirV);
+            const { dirU, dirV, origin, normal, V_normal_ort_u } = tangents(API.uTangent, API.vTangent);
             origin.multiplyScalar(4);
             const length = 30;
             const hex = 0xffff00;;
