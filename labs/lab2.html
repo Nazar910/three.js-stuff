@@ -73,7 +73,7 @@
             texture.repeat.set(4, 1);
             const mat = new THREE.MeshPhongMaterial({
                 side: THREE.DoubleSide,
-                shading: THREE.FlatShading,
+                flatShading: true,
                 map: texture
             });
             const mesh = new THREE.Mesh(geom, mat);

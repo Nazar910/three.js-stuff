@@ -67,7 +67,11 @@
             directionalLight.position.set(-30, 50, 50);
             scene.add(directionalLight);
             const geom = new THREE.ParametricGeometry(helikoideWaveAndStraight.bind(API), 100, 100);
-            const mat = new THREE.MeshPhongMaterial({ color: 0xcc3333a, side: THREE.DoubleSide, shading: THREE.FlatShading });
+            const mat = new THREE.MeshPhongMaterial({
+                color: 0xcc3333a,
+                side: THREE.DoubleSide,
+                flatShading: true
+            });
             const mesh = new THREE.Mesh(geom, mat);
             mesh.name = 'param';
             mesh.scale.set(4, 4, 4);
