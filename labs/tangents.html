@@ -33,8 +33,7 @@
             vTo: 7,
             uTo: 2 * Math.PI,
             uTangent: 0.5,
-            vTangent: 0.5,
-            'X-angle': 0
+            vTangent: 0.5
         };
         function helikoideWaveAndStraight(u, v, target) {
             const { p, b, a, R, vTo, uTo } = this;
@@ -59,10 +58,46 @@
             const xV = (f_v_delta.x - f.x) / delta;
             const yV = (f_v_delta.y - f.y) / delta;
             const zV = (f_v_delta.z - f.z) / delta;
+            const dirU = new THREE.Vector3(xU, yU, zU);
+            const dirV = new THREE.Vector3(xV, yV, zV);
+            const origin = new THREE.Vector3(f.x, f.y, f.z);
+            const scalarMul = (v1, v2) => (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
+            //=================Xi angle=================
+            const X_angle = Math.acos(
+                scalarMul(dirU, dirV) /
+                (dirU.length() * dirV.length())
+            );
+            console.log('Xi_angle between u and v coordinate curves');
+            console.log('Xi_angle (radians) =', X_angle);
+            console.log('Xi_angle (degrees) =', X_angle * 180 / Math.PI);
+            //=================Xi angle=================
+            const { b, p, a } = API;
+            const F = 0;
+            const E = v * v + (b +  a * p * Math.cos(p * u));
+            const G = 1;
+            const A = Math.sqrt(E);
+            const L = (a * p * p * v * Math.sin(p * u)) / A;
+            const M = (b + a * p * Math.cos(p * u)) / A;
+            const N = 0;
+            //computing k1 and k2 from square equation
+            const a_discr = (F * F - E * G);
+            const b_discr = (E * N + G * L - 2 * F * M);
+            const c_discr = (M * M - L * N);
+            const Discr = b_discr**2 - 4 * a_discr * c_discr;
+            if (Discr >= 0) {
+                const k1 = (-b_discr - Math.sqrt(Discr)) / 2 * a_discr;
+                const k2 = (-b_discr + Math.sqrt(Discr)) / 2 * a_discr;
+                const K_povn = k1 * k2;
+                console.log('K_povn =', K_povn);
+                const K_seredn = k1 + k2;
+                console.log('K_seredn =', K_seredn);
+            } else {
+                console.log('Discr is less than 0');
+            }
             return {
-                dirU: new THREE.Vector3(xU, yU, zU),
-                dirV: new THREE.Vector3(xV, yV, zV),
-                origin: new THREE.Vector3(f.x, f.y, f.z)
+                dirU,
+                dirV,
+                origin
             };
         }
         function init() {
@@ -96,14 +131,6 @@
             mesh.scale.set(4, 4, 4);
             scene.add(mesh);
             const { dirU, dirV, origin } = tangents(API.uTangent, API.vTangent);
-            const scalarMul = (v1, v2) => (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
-            const X_angle = Math.acos(
-                scalarMul(dirU, dirV) /
-                (dirU.length() * dirV.length())
-            );
-            console.log('X_angle between u and v coordinate curves');
-            console.log('X_angle (radians) =', X_angle);
-            console.log('X_angle (degrees) =', 180 * X_angle / Math.PI);
             dirU.normalize();
             dirV.normalize();
             origin.multiplyScalar(4);
