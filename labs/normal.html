@@ -3,7 +3,7 @@
 
 <head>
     <meta charset=utf-8>
-    <title>Tangents</title>
+    <title>Normal and tangents</title>
     <style>
         body {
             margin: 0;
@@ -32,8 +32,10 @@
             R: 5,
             vTo: 7,
             uTo: 2 * Math.PI,
-            uTangent: 0.5,
-            vTangent: 0.5
+            uTangent: 0.3,
+            vTangent: 0.5,
+            rotateLeft: false,
+            rotateRight: false
         };
         function helikoideWaveAndStraight(u, v, target) {
             const { p, b, a, R, vTo, uTo } = this;
@@ -44,7 +46,7 @@
             const z = b * u + a * Math.sin(p * u);
             target.set(x, y, z);
         }
-        function tangents(u, v) {
+        function computeTangentsAndNormal(u, v) {
             const delta = 0.01;
             const f = new THREE.Vector3();
             helikoideWaveAndStraight.call(API, u, v, f);
@@ -63,8 +65,9 @@
             const origin = new THREE.Vector3(f.x, f.y, f.z);
             dirU.normalize();
             dirV.normalize();
-            const normal = new THREE.Vector3();
-            normal.multiplyVectors(dirU, dirV);
+            const vectorMultiply = (v1, v2) =>
+                new THREE.Vector3(v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x);
+            const normal = vectorMultiply(dirU, dirV);
             const scalarMul = (v1, v2) => (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
             //=================Xi angle=================
             const X_angle = Math.acos(
@@ -141,6 +144,7 @@
             }
             const directionalLight = new THREE.DirectionalLight();
             directionalLight.position.set(-30, 50, 50);
+            directionalLight.name = 'd_light';
             scene.add(directionalLight);
             const geom = new THREE.ParametricGeometry(helikoideWaveAndStraight.bind(API), 100, 100);
             const mat = new THREE.MeshPhongMaterial({
@@ -152,7 +156,7 @@
             mesh.name = 'hellikoide';
             mesh.scale.set(4, 4, 4);
             scene.add(mesh);
-            const { dirU, dirV, origin, normal, V_normal_ort_u } = tangents(API.uTangent, API.vTangent);
+            const { dirU, dirV, origin, normal } = computeTangentsAndNormal(API.uTangent, API.vTangent);
             origin.multiplyScalar(4);
             const length = 30;
             const hex = 0xffff00;;
@@ -165,9 +169,21 @@
             const arrow_normal = new THREE.ArrowHelper(normal, origin, length, hex);
             scene.add(arrow_normal);
         }
+        const rotSpeed = 0.01;
         function render() {
             renderer.render(scene, camera);
             requestAnimationFrame(render);
+            const { rotateLeft, rotateRight } = API;
+            const { x, z } = camera.position;
+            if (rotateLeft) {
+                camera.position.x = x * Math.cos(rotSpeed) + z * Math.sin(rotSpeed);
+                camera.position.z = z * Math.cos(rotSpeed) - x * Math.sin(rotSpeed);
+            } else if (rotateRight) {
+                camera.position.x = x * Math.cos(rotSpeed) - z * Math.sin(rotSpeed);
+                camera.position.z = z * Math.cos(rotSpeed) + x * Math.sin(rotSpeed);
+            }
+            camera.lookAt(scene.position);
+            camera.updateProjectionMatrix();
         }
         function initGui() {
             gui = new dat.GUI();
@@ -179,6 +195,8 @@
             gui.add(API, 'uTo', 0.1, 4 * Math.PI).name('uTo').onChange(display);
             gui.add(API, 'uTangent', 0, 1).name('uTangent').onChange(display);
             gui.add(API, 'vTangent', 0, 1).name('vTangent').onChange(display);
+            gui.add(API, 'rotateLeft').name('rotateLeft').onChange(render);
+            gui.add(API, 'rotateRight').name('rotateRight').onChange(render);
         }
         window.onload = () => {
             init();
